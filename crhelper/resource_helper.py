@@ -17,6 +17,7 @@ import boto3
 import string
 import json
 import os
+import copy
 from time import sleep
 
 logger = logging.getLogger(__name__)
@@ -277,14 +278,17 @@ class CfnResource(object):
         account_id = self._event['CrHelperRule'].split(":")[4]
         partition = self._event['CrHelperRule'].split(":")[1]
         rule_name = self._event['CrHelperRule'].split("/")[1]
-        logger.debug(self._event)
+        event_input = copy.deepcopy(self._event)
+        if 'ResourceProperties' in event_input:
+            event_input.pop('ResourceProperties')
+        logger.debug(event_input)
         self._events_client.put_targets(
             Rule=rule_name,
-            Targets=[
+                Targets=[
                 {
                     'Id': '1',
                     'Arn': 'arn:%s:lambda:%s:%s:function:%s' % (partition, region, account_id, func_name),
-                    'Input': json.dumps(self._event)
+                    'Input': json.dumps(event_input)
                 }
             ]
         )
